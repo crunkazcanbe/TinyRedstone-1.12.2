@@ -1,0 +1,123 @@
+package com.dannyandson.tinyredstone.blocks.panelcells;
+
+import com.dannyandson.tinyredstone.api.IPanelCell;
+import com.dannyandson.tinyredstone.blocks.PanelCellNeighbor;
+import com.dannyandson.tinyredstone.blocks.PanelCellPos;
+import com.dannyandson.tinyredstone.blocks.RenderHelper;
+import com.dannyandson.tinyredstone.blocks.Side;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.ResourceLocation;
+
+public class RedstoneLamp extends TinyBlock implements IPanelCell {
+
+    private boolean lit = false;
+
+    public static ResourceLocation TEXTURE_REDSTONE_LAMP = new ResourceLocation("minecraft","blocks/redstone_lamp_off");
+    public static ResourceLocation TEXTURE_REDSTONE_LAMP_ON = new ResourceLocation("minecraft","blocks/redstone_lamp_on");
+
+    /**
+     * Drawing the cell on the panel
+     *
+     * @param matrixStack     positioned for this cell
+     *                        scaled to 1/8 block size such that length and width of cell are 1.0
+     *                        starting point is (0,0,0)
+     */
+    @Override
+    public void render(float partialTicks, int combinedLight, float alpha) {
+        TextureAtlasSprite sprite;
+
+        if (lit) sprite = RenderHelper.getSprite(TEXTURE_REDSTONE_LAMP_ON);
+        else sprite = RenderHelper.getSprite(TEXTURE_REDSTONE_LAMP);
+
+        GlStateManager.translate(0,0,1.0);
+        RenderHelper.drawRectangle(0,1,0,1,sprite,combinedLight,color,alpha);
+
+        GlStateManager.rotate(90,1,0,0);
+        GlStateManager.translate(0,-1,0);
+        RenderHelper.drawRectangle(0,1,0,1,sprite,combinedLight,color,alpha);
+
+        GlStateManager.rotate(90,0,1,0);
+        GlStateManager.translate(0,0,1);
+        RenderHelper.drawRectangle(0,1,0,1,sprite,combinedLight,color,alpha);
+
+        GlStateManager.rotate(90,0,1,0);
+        GlStateManager.translate(0,0,1);
+        RenderHelper.drawRectangle(0,1,0,1,sprite,combinedLight,color,alpha);
+
+        GlStateManager.rotate(90,0,1,0);
+        GlStateManager.translate(0,0,1);
+        RenderHelper.drawRectangle(0,1,0,1,sprite,combinedLight,color,alpha);
+
+        GlStateManager.rotate(90,1,0,0);
+        GlStateManager.translate(0,-1,0);
+        RenderHelper.drawRectangle(0,1,0,1,sprite,combinedLight,color,alpha);
+
+    }
+
+    /**
+     * Called when neighboring redstone signal output changes.
+     * This can be called multiple times in a tick.
+     * Passes PanelCellPos object for this cell which can be used to query PanelTile for PanelCellNeighbor objects - objects wrapping another IPanelCell or a BlockState
+     * @param cellPos PanelCellPos object for this cell. Can be used to query paneltile about neighbors
+     * @return boolean indicating whether redstone output of this cell has changed
+     */
+    @Override
+    public boolean neighborChanged(PanelCellPos cellPos){
+
+        PanelCellNeighbor rightNeighbor = cellPos.getNeighbor(Side.RIGHT),
+                leftNeighbor = cellPos.getNeighbor(Side.LEFT),
+                backNeighbor = cellPos.getNeighbor(Side.BACK),
+                frontNeighbor = cellPos.getNeighbor(Side.FRONT),
+                topNeighbor = cellPos.getNeighbor(Side.TOP),
+                bottomNeighbor = cellPos.getNeighbor(Side.BOTTOM);
+
+        boolean change = super.neighborChanged(cellPos);
+
+        if (
+                (weakSignalStrength + strongSignalStrength > 0) ||
+                        ((
+                                ((frontNeighbor != null) ? frontNeighbor.getWeakRsOutput() : 0) +
+                                        ((rightNeighbor != null) ? rightNeighbor.getWeakRsOutput() : 0) +
+                                        ((backNeighbor != null) ? backNeighbor.getWeakRsOutput() : 0) +
+                                        ((leftNeighbor != null) ? leftNeighbor.getWeakRsOutput() : 0)+
+                                        ((topNeighbor != null) ? topNeighbor.getWeakRsOutput() : 0)+
+                                        ((bottomNeighbor != null) ? bottomNeighbor.getWeakRsOutput() : 0)) > 0)
+        ) {
+            if (!this.lit) {
+                this.lit = true;
+                return true;
+            }
+        } else if (this.lit) {
+            this.lit = false;
+            return true;
+        }
+
+        return change;
+    }
+
+    @Override
+    public NBTTagCompound writeNBT() {
+        NBTTagCompound nbt = super.writeNBT();
+        nbt.setBoolean("lit",this.lit);
+        return nbt;
+    }
+
+    @Override
+    public void readNBT(NBTTagCompound compoundNBT) {
+        super.readNBT(compoundNBT);
+        this.lit= compoundNBT.getBoolean("lit");
+    }
+
+    /**
+     * If this cell outputs light, return the level here. Otherwise, return 0.
+     *
+     * @return Light level to output 0-15
+     */
+    @Override
+    public int lightOutput() {
+        return (this.lit)?1:0;
+    }
+
+}

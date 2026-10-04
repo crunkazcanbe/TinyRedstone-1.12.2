@@ -1,0 +1,58 @@
+// Tiny Redstone — backport from 1.16 Forge to 1.12.2 Forge (dannydjdk/Tiny-Redstone, GPL-3.0).
+// Core only at first: compat/ (TheOneProbe, HWYLA, ProjectRed) dropped until core works.
+// FG3 + JDK8 toolchain (same as the other DogPound ports). Build:
+//   ./gradlew build -Dorg.gradle.java.home=/usr/lib/jvm/java-8-openjdk-amd64
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net/' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+
+tasks.withType(JavaCompile) { options.encoding = 'UTF-8' }
+
+version = '1.12.2-0.1.0'
+group = 'com.dannyandson.tinyredstone'
+archivesBaseName = 'tinyredstone-1.12.2'
+
+sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
+
+minecraft {
+    mappings channel: 'snapshot', version: '20171003-1.12'
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
+}
+
+processResources {
+    inputs.property 'version', project.version
+    inputs.property 'mcversion', '1.12.2'
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+        expand 'version': project.version, 'mcversion': '1.12.2'
+    }
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+            'Specification-Title'   : 'tinyredstone',
+            'Specification-Vendor'  : 'dannyandson (backport: Pride)',
+            'Specification-Version' : '1',
+            'Implementation-Title'  : project.name,
+            'Implementation-Version': "${version}",
+            'Implementation-Vendor' : 'Pride'
+        ])
+    }
+}
+
+jar.finalizedBy('reobfJar')
